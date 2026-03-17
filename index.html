@@ -167,35 +167,39 @@ let modal
 let history=[]
 let trades=[]
 
-document.getElementById("loginBtn").addEventListener("click",login)
-document.getElementById("profitBtn").addEventListener("click",profit)
-document.getElementById("lossBtn").addEventListener("click",loss)
+document.getElementById("loginBtn").addEventListener("click", login)
+document.getElementById("profitBtn").addEventListener("click", profit)
+document.getElementById("lossBtn").addEventListener("click", loss)
+
 
 async function login(){
 
-token=document.getElementById("token").value
+token = document.getElementById("token").value
 
-if(!token) return alert("Enter Token ID")
+if(!token){
+alert("Enter Token ID")
+return
+}
 
-const ref=doc(db,"wallets",token)
+const ref = doc(db,"wallets",token)
 
-const snap=await getDoc(ref)
+const snap = await getDoc(ref)
 
 if(snap.exists()){
 
-const data=snap.data()
+const data = snap.data()
 
-balance=data.balance
-modal=data.modal
-history=data.history
-trades=data.trades || []
+balance = data.balance
+modal = data.modal
+history = data.history || []
+trades = data.trades || []
 
 }else{
 
-modal=10000
-balance=100
-history=[100]
-trades=[]
+modal = 10000
+balance = 100
+history = [100]
+trades = []
 
 await setDoc(ref,{
 balance,
@@ -212,9 +216,10 @@ update()
 
 }
 
+
 async function save(){
 
-const ref=doc(db,"wallets",token)
+const ref = doc(db,"wallets",token)
 
 await updateDoc(ref,{
 balance,
@@ -224,13 +229,14 @@ trades
 
 }
 
+
 function profit(){
 
-let val=parseFloat(document.getElementById("tradeInput").value)
+let val = parseFloat(document.getElementById("tradeInput").value)
 
-if(!val)return
+if(!val) return
 
-balance+=val
+balance += val
 
 history.push(balance)
 
@@ -242,13 +248,14 @@ update()
 
 }
 
+
 function loss(){
 
-let val=parseFloat(document.getElementById("tradeInput").value)
+let val = parseFloat(document.getElementById("tradeInput").value)
 
-if(!val)return
+if(!val) return
 
-balance-=val
+balance -= val
 
 history.push(balance)
 
@@ -260,27 +267,29 @@ update()
 
 }
 
+
 function update(){
 
 document.getElementById("balance").innerHTML="$"+balance.toFixed(2)
 
-let pnl=balance-modal
+let pnl = balance - modal
 
-let pnlEl=document.getElementById("pnl")
+let pnlEl = document.getElementById("pnl")
 
 pnlEl.innerHTML="$"+pnl.toFixed(2)
 
-pnlEl.className=pnl>=0?"pnl green":"pnl red"
+pnlEl.className = pnl>=0 ? "pnl green":"pnl red"
 
-let percent=(balance/modal)*100
+let percent = (balance/modal)*100
 
-document.getElementById("bar").style.width=percent+"%"
+document.getElementById("bar").style.width = percent+"%"
 
-document.getElementById("history").innerHTML=trades.slice().reverse().join("<br>")
+document.getElementById("history").innerHTML = trades.slice().reverse().join("<br>")
 
 drawChart()
 
 }
+
 
 let chart
 
@@ -288,7 +297,7 @@ function drawChart(){
 
 if(chart) chart.destroy()
 
-chart=new Chart(document.getElementById("chart"),{
+chart = new Chart(document.getElementById("chart"),{
 
 type:'line',
 
