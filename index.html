@@ -1,15 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recovery Wallet</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <style>
 
@@ -96,50 +92,49 @@ overflow:auto;
 <div class="container">
 
 <div class="card">
-
 <h3>Login Wallet</h3>
-
-<input id="token" placeholder="Token ID">
-<button onclick="login()">Load Wallet</button>
-
+<input id="token" placeholder="Token ID (contoh: leo)">
+<button id="loginBtn">Load Wallet</button>
 </div>
 
 <div id="app" style="display:none">
 
 <div class="card">
-
 <div class="balance" id="balance">$0</div>
-
 <div class="pnl red" id="pnl">$0</div>
 
 <div class="progress">
 <div class="bar" id="bar"></div>
 </div>
-
 </div>
 
 <div class="card">
-
 <input id="tradeInput" placeholder="Profit / Loss">
-
-<button onclick="profit()">Add Profit</button>
-<button onclick="loss()">Add Loss</button>
-
+<button id="profitBtn">Add Profit</button>
+<button id="lossBtn">Add Loss</button>
 </div>
 
 <div class="card">
-
 <canvas id="chart"></canvas>
-
 <div class="history" id="history"></div>
-
 </div>
 
 </div>
 
 </div>
 
-<script>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
+
+import {
+getFirestore,
+doc,
+getDoc,
+setDoc,
+updateDoc
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAFTFHPB5DNo0uRJbxgxoaD7xar6ho9P6E",
@@ -147,12 +142,13 @@ const firebaseConfig = {
   projectId: "recovery-wallet",
   storageBucket: "recovery-wallet.firebasestorage.app",
   messagingSenderId: "341052314708",
-  appId: "1:341052314708:web:1c28e66f562b4564fe09c1"
+  appId: "1:341052314708:web:1c28e66f562b4564fe09c1",
+  measurementId: "G-CTRCCN5CWQ"
 };
 
-firebase.initializeApp(firebaseConfig);
-
-const db=firebase.firestore()
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
 
 let token
 let balance
@@ -160,20 +156,25 @@ let modal
 let history=[]
 let trades=[]
 
+document.getElementById("loginBtn").onclick=login
+document.getElementById("profitBtn").onclick=profit
+document.getElementById("lossBtn").onclick=loss
+
 async function login(){
 
 token=document.getElementById("token").value
 
-const doc=await db.collection("wallets").doc(token).get()
+const ref=doc(db,"wallets",token)
+const snap=await getDoc(ref)
 
-if(doc.exists){
+if(snap.exists()){
 
-let data=doc.data()
+const data=snap.data()
 
 balance=data.balance
 modal=data.modal
 history=data.history
-trades=data.trades || []
+trades=data.trades||[]
 
 }else{
 
@@ -182,11 +183,11 @@ balance=100
 history=[100]
 trades=[]
 
-await db.collection("wallets").doc(token).set({
-balance:balance,
-modal:modal,
-history:history,
-trades:trades
+await setDoc(ref,{
+balance,
+modal,
+history,
+trades
 })
 
 }
@@ -199,10 +200,12 @@ update()
 
 async function save(){
 
-await db.collection("wallets").doc(token).update({
-balance:balance,
-history:history,
-trades:trades
+const ref=doc(db,"wallets",token)
+
+await updateDoc(ref,{
+balance,
+history,
+trades
 })
 
 }
