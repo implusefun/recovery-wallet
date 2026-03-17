@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Recovery Wallet</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<style>
+
+body{
+background:#0e0e16;
+font-family:system-ui;
+color:white;
+padding:20px;
+}
+
+.container{
+max-width:420px;
+margin:auto;
+}
+
+.card{
+background:#171721;
+border-radius:20px;
+padding:20px;
+margin-bottom:20px;
+}
+
+.balance{
+font-size:42px;
+font-weight:bold;
+}
+
+.pnl{
+margin-top:6px;
+}
+
+.green{color:#3cff9b;}
+.red{color:#ff4d6d;}
+
+.progress{
+height:10px;
+background:#2a2a35;
+border-radius:10px;
+margin-top:12px;
+overflow:hidden;
+}
+
+.bar{
+height:100%;
+background:#7a5cff;
+width:0%;
+}
+
+input{
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+margin-top:10px;
+background:#252535;
+color:white;
+}
+
+button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:10px;
+background:#7a5cff;
+color:white;
+font-weight:bold;
+}
+
+.history{
+margin-top:10px;
+font-size:14px;
+opacity:0.8;
+max-height:120px;
+overflow:auto;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h3>Login Wallet</h3>
+
+<input id="token" placeholder="Token ID">
+<button onclick="login()">Load Wallet</button>
+
+</div>
+
+<div id="app" style="display:none">
+
+<div class="card">
+
+<div class="balance" id="balance">$0</div>
+
+<div class="pnl red" id="pnl">$0</div>
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+</div>
+
+<div class="card">
+
+<input id="tradeInput" placeholder="Profit / Loss">
+
+<button onclick="profit()">Add Profit</button>
+<button onclick="loss()">Add Loss</button>
+
+</div>
+
+<div class="card">
+
+<canvas id="chart"></canvas>
+
+<div class="history" id="history"></div>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAFTFHPB5DNo0uRJbxgxoaD7xar6ho9P6E",
+  authDomain: "recovery-wallet.firebaseapp.com",
+  projectId: "recovery-wallet",
+  storageBucket: "recovery-wallet.firebasestorage.app",
+  messagingSenderId: "341052314708",
+  appId: "1:341052314708:web:1c28e66f562b4564fe09c1"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db=firebase.firestore()
+
+let token
+let balance
+let modal
+let history=[]
+let trades=[]
+
+async function login(){
+
+token=document.getElementById("token").value
+
+const doc=await db.collection("wallets").doc(token).get()
+
+if(doc.exists){
+
+let data=doc.data()
+
+balance=data.balance
+modal=data.modal
+history=data.history
+trades=data.trades || []
+
+}else{
+
+modal=10000
+balance=100
+history=[100]
+trades=[]
+
+await db.collection("wallets").doc(token).set({
+balance:balance,
+modal:modal,
+history:history,
+trades:trades
+})
+
+}
+
+document.getElementById("app").style.display="block"
+
+update()
+
+}
+
+async function save(){
+
+await db.collection("wallets").doc(token).update({
+balance:balance,
+history:history,
+trades:trades
+})
+
+}
+
+function profit(){
+
+let val=parseFloat(document.getElementById("tradeInput").value)
+
+if(!val)return
+
+balance+=val
+
+history.push(balance)
+
+trades.push("+"+val)
+
+save()
+
+update()
+
+}
+
+function loss(){
+
+let val=parseFloat(document.getElementById("tradeInput").value)
+
+if(!val)return
+
+balance-=val
+
+history.push(balance)
+
+trades.push("-"+val)
+
+save()
+
+update()
+
+}
+
+function update(){
+
+document.getElementById("balance").innerHTML="$"+balance.toFixed(2)
+
+let pnl=balance-modal
+
+let pnlEl=document.getElementById("pnl")
+
+pnlEl.innerHTML="$"+pnl.toFixed(2)
+
+pnlEl.className=pnl>=0?"pnl green":"pnl red"
+
+let percent=(balance/modal)*100
+
+document.getElementById("bar").style.width=percent+"%"
+
+document.getElementById("history").innerHTML=trades.slice().reverse().join("<br>")
+
+drawChart()
+
+}
+
+let chart
+
+function drawChart(){
+
+if(chart) chart.destroy()
+
+chart=new Chart(document.getElementById("chart"),{
+
+type:'line',
+
+data:{
+labels:history.map((_,i)=>i+1),
+datasets:[{
+data:history,
+borderColor:"#7a5cff",
+borderWidth:3,
+tension:0.4
+}]
+},
+
+options:{
+plugins:{legend:{display:false}},
+scales:{x:{display:false},y:{display:false}}
+}
+
+})
+
+}
+
+</script>
+
+</body>
+</html>
